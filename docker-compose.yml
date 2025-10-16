@@ -1,0 +1,100 @@
+services:
+  # PostgreSQL Veritabanı
+  db:
+    image: postgres:15-alpine
+    container_name: envanter_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: envanter_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - envanter_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d envanter_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js API Servisi
+  api:
+    build:
+      context: ./envanter_api
+      dockerfile: Dockerfile
+    container_name: envanter_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:password@db:5432/envanter_db?schema=public
+      JWT_SECRET: your-secret-key-here
+      JWT_EXPIRES_IN: 24h
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./envanter_api:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - envanter_network
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        npm ci &&
+        npx prisma migrate dev --name init &&
+        npm run dev
+      "
+
+  # React UI Servisi
+  ui:
+    build:
+      context: ./envanter_ui
+      dockerfile: Dockerfile
+    container_name: envanter_ui
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001
+      VITE_APP_NAME: Envanter Yönetim Sistemi
+      VITE_APP_VERSION: 1.0.0
+      VITE_NODE_ENV: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./envanter_ui:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    networks:
+      - envanter_network
+    command: npm run dev
+
+  # Nginx Reverse Proxy (Opsiyonel)
+  nginx:
+    image: nginx:alpine
+    container_name: envanter_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - ui
+    networks:
+      - envanter_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  envanter_network:
+    driver: bridge

@@ -1,0 +1,5 @@
+{
+  "name": "Envanter Yönetim Paneli",
+  "description": "Ürünleri, kullanıcıları ve stok hareketlerini yönetmek için modern bir React tabanlı envanter yönetim paneli.",
+  "requestFramePermissions": []
+}

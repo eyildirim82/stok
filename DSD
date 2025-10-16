@@ -1,0 +1,144 @@
+Tasarım Spesifikasyon Belgesi (DSD)
+Proje Adı: Web Tabanlı Envanter Yönetim Sistemi (EnvanterPro v1.0)
+Belge Sürümü: 1.1 (Node.js/React Sürümü)
+Tarih: 13.10.2025
+
+1. Giriş
+Bu belgenin amacı, SRS v2.0'da tanımlanan gereksinimleri karşılamak üzere geliştirilecek olan yazılımın teknik tasarımını, sistem mimarisini ve bileşenlerini açıklamaktır. Bu doküman, Node.js ve React kullanacak olan geliştirme ekibi için ana teknik rehber niteliğindedir.
+
+2. Sistem Mimarisi
+Sistem, modern web uygulamaları için standart olan 3 Katmanlı Mimari (Three-Tier Architecture) modeline göre geliştirilecektir. Bu model, frontend, backend ve veritabanının birbirinden bağımsız olarak geliştirilmesine ve ölçeklenmesine olanak tanır.
+
+Sunum Katmanı (Frontend - Client):
+
+Teknoloji: React.js (TypeScript ile)
+
+Açıklama: Kullanıcının tarayıcıda gördüğü ve etkileşimde bulunduğu tüm arayüzleri içerir. Tek Sayfa Uygulaması (Single Page Application - SPA) olarak tasarlanacaktır. Bu sayede hızlı ve akıcı bir kullanıcı deneyimi sunulacaktır.
+
+Kütüphaneler: API iletişimi için axios, durum yönetimi için React Context veya Redux Toolkit, form yönetimi için React Hook Form gibi standart kütüphaneler kullanılacaktır.
+
+İş Mantığı Katmanı (Backend - Server):
+
+Teknoloji: Node.js
+
+Framework: Express.js
+
+Açıklama: Tüm iş kuralları, veri doğrulama, dosya işleme ve kimlik doğrulama mantığı bu katmanda yer alır. Frontend ile iletişim, standart RESTful API prensiplerine uygun olarak JSON formatında sağlanacaktır.
+
+Veri Katmanı (Database):
+
+Teknoloji: PostgreSQL
+
+ORM: Prisma
+
+Açıklama: Tüm uygulama verileri (kullanıcılar, ürünler, stok hareketleri) PostgreSQL veritabanında saklanacaktır. Veritabanı ile olan tüm etkileşimler, modern ve tip güvenli bir ORM olan Prisma aracılığıyla yapılacaktır. Bu, veritabanı sorgularını daha güvenli ve yönetilebilir hale getirir.
+
+3. Veritabanı Tasarımı
+Veritabanı şeması, Prisma'nın şema tanım dili (schema.prisma) ile aşağıdaki gibi tasarlanacaktır. Bu yapı, tabloları, alanları ve aralarındaki ilişkileri net bir şekilde tanımlar.
+
+Kod snippet'i
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id             Int              @id @default(autoincrement())
+  urunKodu       String           @unique
+  kategori       String
+  alisFiyati     Float
+  listeFiyati    Float
+  mevcutMiktar   Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  stockMovements StockMovement[]
+}
+
+model StockMovement {
+  id            Int          @id @default(autoincrement())
+  product       Product      @relation(fields: [productId], references: [id])
+  productId     Int
+  movementType  String       // 'GIRIS' veya 'CIKIS'
+  quantity      Int
+  faturaNo      String?
+  movementDate  DateTime
+  createdAt     DateTime     @default(now())
+}
+4. Bileşen Tasarımı (Component Design)
+API Uç Noktaları (Endpoints): Backend, aşağıdaki temel Express Router'ları ve endpoint'leri içerecektir:
+
+POST /api/auth/register: Yeni kullanıcı kaydı.
+
+POST /api/auth/login: Kullanıcı girişi ve JWT üretimi.
+
+GET, POST /api/products: Ürün listeleme ve yeni ürün ekleme.
+
+GET, PUT, DELETE /api/products/:id: Tek bir ürün detayı, güncelleme ve silme.
+
+POST /api/stock-movements/manual: Form ile manuel stok hareketi ekleme.
+
+POST /api/stock-movements/upload-entry: Excel dosyası ile toplu stok girişi.
+
+GET /api/stock-movements: Stok hareket geçmişini listeleme.
+
+Kimlik Doğrulama Bileşeni (Backend):
+
+Şifreler, bcryptjs kütüphanesi kullanılarak hash'lenecektir.
+
+Kullanıcı doğrulama, jsonwebtoken (JWT) ile sağlanacaktır. Login başarılı olduğunda üretilen token, Frontend'e gönderilir ve sonraki her istekte Authorization: Bearer <token> başlığı ile geri yollanır.
+
+Korumalı endpoint'lere erişim, gelen token'ı doğrulayan bir Express middleware'i ile kontrol edilecektir.
+
+Excel İşleme Bileşeni (Backend):
+
+Dosya Yükleme: Dosya yükleme işlemleri, Express için standart olan multer middleware'i ile yönetilecektir. multer, dosyayı bellekte (buffer) tutacak şekilde yapılandırılacaktır.
+
+Dosya Okuma: Bellekteki dosya buffer'ı, xlsx (SheetJS) kütüphanesi kullanılarak okunup JSON formatına dönüştürülecektir.
+
+Veri İşleme: Döngü ile her bir satır işlenirken, tüm veritabanı operasyonları (ürün bulma, stok güncelleme, hareket kaydı oluşturma) tek bir Prisma interactive transaction ($transaction) bloğu içinde gerçekleştirilecektir. Bu, dosyanın herhangi bir satırında hata olması durumunda o dosyaya ait tüm işlemlerin geri alınmasını (rollback) garanti eder.
+
+Frontend Arayüz Bileşenleri (React):
+
+AuthLayout.tsx: Giriş ve kayıt sayfaları için genel layout.
+
+DashboardLayout.tsx: Giriş yapıldıktan sonraki sayfalar için menü, başlık gibi sabit bileşenleri içeren layout.
+
+components/ProductTable.tsx: Ürünleri listeleyen, sıralama ve arama özelliklerine sahip tablo bileşeni.
+
+components/FileUpload.tsx: Sürükle-bırak destekli, dosya tipi kontrolü yapan dosya yükleme bileşeni.
+
+pages/LoginPage.tsx: Kullanıcı giriş formu.
+
+pages/ProductPage.tsx: Ürün tablosunu ve ürün ekleme/düzenleme modallarını içeren sayfa.
+
+pages/BulkUploadPage.tsx: Excel yükleme bileşenini barındıran sayfa.
+
+services/api.ts: API isteklerini yöneten, axios tabanlı merkezi servis dosyası.
+
+5. Altyapı ve Dağıtım (Infrastructure & Deployment)
+Versiyon Kontrolü: Tüm kod tabanı (hem frontend hem backend) Git ile yönetilecek ve GitHub üzerinde barındırılacaktır.
+
+Konteynerleştirme: Geliştirme ve üretim ortamları arasındaki tutarlılığı sağlamak için tüm uygulama (Node.js API, React App, PostgreSQL DB, Nginx) Docker ile konteynerleştirilecektir.
+
+Dağıtım (Deployment):
+
+Uygulama, DigitalOcean, AWS veya benzeri bir bulut sağlayıcı üzerinde barındırılacaktır.
+
+Üretim ortamında Node.js uygulaması, sürekli çalışmayı ve performansı garanti altına almak için bir proses yöneticisi olan PM2 ile çalıştırılacaktır.
+
+Nginx, bir reverse proxy olarak görev yapacaktır. Gelen istekleri karşılayacak, /api/ ile başlayanları Node.js/Express sunucusuna, diğer tüm istekleri ise React uygulamasının statik dosyalarına yönlendirecektir. Bu ayrıca SSL sonlandırma gibi görevleri de üstlenir.
