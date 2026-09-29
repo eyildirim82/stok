@@ -1,14 +1,12 @@
 services:
-  # PostgreSQL Veritabanı
   db:
     image: postgres:15-alpine
     container_name: envanter_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: envanter_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: ${POSTGRES_DB:-envanter_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_only_change_me}
     ports:
       - "5432:5432"
     volumes:
@@ -17,12 +15,11 @@ services:
     networks:
       - envanter_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d envanter_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-envanter_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Node.js API Servisi
   api:
     build:
       context: ./envanter_api
@@ -32,9 +29,9 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3001
-      DATABASE_URL: postgresql://postgres:password@db:5432/envanter_db?schema=public
-      JWT_SECRET: your-secret-key-here
-      JWT_EXPIRES_IN: 24h
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-dev_only_change_me}@db:5432/${POSTGRES_DB:-envanter_db}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
     ports:
       - "3001:3001"
     volumes:
@@ -53,7 +50,6 @@ services:
         npm run dev
       "
 
-  # React UI Servisi
   ui:
     build:
       context: ./envanter_ui
@@ -61,7 +57,7 @@ services:
     container_name: envanter_ui
     restart: unless-stopped
     environment:
-      VITE_API_URL: http://localhost:3001
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
       VITE_APP_NAME: Envanter Yönetim Sistemi
       VITE_APP_VERSION: 1.0.0
       VITE_NODE_ENV: development
@@ -76,7 +72,6 @@ services:
       - envanter_network
     command: npm run dev
 
-  # Nginx Reverse Proxy (Opsiyonel)
   nginx:
     image: nginx:alpine
     container_name: envanter_nginx
