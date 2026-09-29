@@ -1,96 +1,91 @@
-# Envanter Yönetim Sistemi Kurulum Rehberi
+# Inventory Management System — Setup
 
-## 🚀 Hızlı Başlangıç
-
-### 1. Backend Kurulumu (envanter_api)
-
-#### Gerekli Adımlar:
-1. **`.env` dosyası oluşturun:**
-   ```bash
-   cd envanter_api
-   # .env dosyasını oluşturun ve aşağıdaki içeriği ekleyin:
-   ```
-
-   **envanter_api/.env** dosyası içeriği:
-   ```env
-   DATABASE_URL="postgresql://postgres:password@localhost:5432/envanter_db?schema=public"
-   JWT_SECRET=your-super-secret-jwt-key-here-change-in-production
-   JWT_EXPIRES_IN=24h
-   PORT=3001
-   ```
-
-2. **PostgreSQL Kurulumu:**
-   - PostgreSQL 15+ kurulumu yapın
-   - `envanter_db` veritabanını oluşturun:
-     ```sql
-     CREATE DATABASE envanter_db;
-     ```
-
-3. **Prisma Migration:**
-   ```bash
-   cd envanter_api
-   npx prisma migrate dev
-   ```
-
-4. **Backend'i başlatın:**
-   ```bash
-   npm run dev
-   ```
-
-### 2. Frontend Kurulumu (envanter_ui)
-
-#### Gerekli Adımlar:
-1. **Frontend'i başlatın:**
-   ```bash
-   cd envanter_ui
-   npm run dev
-   ```
-
-### 3. Erişim Adresleri
-
-- **Frontend:** http://localhost:3000
-- **Backend API:** http://localhost:3001
-- **API Health:** http://localhost:3001/api/health
-
-## 🔧 Sorun Giderme
-
-### Database Bağlantı Hatası
-- `.env` dosyasının doğru konumda olduğundan emin olun
-- PostgreSQL servisinin çalıştığından emin olun
-- Veritabanı adının doğru olduğundan emin olun
-
-### Port Çakışması
-- 3000 ve 3001 portlarının boş olduğundan emin olun
-- Başka servisler bu portları kullanıyorsa durdurun
-
-### API Bağlantı Hatası
-- Backend servisinin çalıştığından emin olun
-- CORS ayarlarının doğru olduğundan emin olun
-
-## 📋 Sistem Gereksinimleri
+## Prerequisites
 
 - Node.js 18+
-- PostgreSQL 15+
-- npm veya yarn
+- PostgreSQL 15+ or Docker
+- npm
 
-## 🎯 Özellikler
+## Option 1: Docker Compose
 
-- ✅ Kullanıcı Yönetimi (Kayıt/Giriş)
-- ✅ Ürün CRUD İşlemleri
-- ✅ Stok Hareket Yönetimi
-- ✅ Dashboard ve İstatistikler
-- ✅ Toplu Veri Yükleme
-- ✅ Hareket Geçmişi
-- ✅ Responsive Tasarım
+1. Copy the example environment file:
 
-## 🚀 Production Deployment
+```bash
+cp .env.example .env
+```
 
-### Docker ile Çalıştırma:
+2. Replace the example values in `.env` with local development values. Do not commit `.env`.
+
+3. Start the stack:
+
 ```bash
 docker compose up -d
 ```
 
-### Manuel Kurulum:
-1. Backend ve Frontend'i ayrı ayrı build edin
-2. Production veritabanı ayarlarını yapın
-3. Environment variables'ları production değerleriyle güncelleyin
+The default local services are:
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:3001`
+- API health: `http://localhost:3001/api/health`
+
+## Option 2: Run locally
+
+### Backend
+
+```bash
+cd envanter_api
+npm install
+```
+
+Create `envanter_api/.env` using the variables documented in the repository `.env.example` and point `DATABASE_URL` at your local PostgreSQL instance.
+
+Then run the Prisma migrations and start the API:
+
+```bash
+npx prisma migrate dev
+npm run dev
+```
+
+### Frontend
+
+```bash
+cd envanter_ui
+npm install
+npm run dev
+```
+
+## Configuration
+
+Secrets and machine-specific values are intentionally kept out of source control. The application expects configuration through environment variables, including:
+
+- `POSTGRES_DB`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `JWT_EXPIRES_IN`
+- `VITE_API_URL`
+
+Use `.env.example` as the configuration template and keep real credentials only in your local/deployment environment.
+
+## Troubleshooting
+
+### Database connection errors
+
+- Confirm PostgreSQL is running.
+- Confirm `DATABASE_URL` points to the correct host, port and database.
+- Confirm the configured database user has access to the database.
+
+### Port conflicts
+
+The development configuration uses ports `3000`, `3001` and `5432`. Change the local configuration if another service already uses one of these ports.
+
+### Frontend cannot reach the API
+
+- Confirm the backend is running.
+- Check `VITE_API_URL`.
+- Check the API CORS configuration.
+
+## Production notes
+
+Do not use development/example credentials in production. Inject production secrets through the hosting platform or secret-management system rather than committing them to the repository.
