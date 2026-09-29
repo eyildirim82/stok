@@ -1,175 +1,165 @@
-# Envanter Yönetim Sistemi
+# Inventory Management System
 
-Modern web tabanlı envanter yönetim sistemi. Node.js + React + PostgreSQL + Docker ile geliştirilmiştir.
+A full-stack inventory management application for managing products, stock movements and day-to-day inventory workflows through a web interface and REST API.
 
-## 🏗️ Proje Yapısı
+Built with **React, TypeScript, Node.js, Express, PostgreSQL, Prisma, Docker and Nginx**.
 
+## Highlights
+
+- Product and inventory management
+- IN / OUT stock movement workflows
+- JWT-based authentication
+- REST API for inventory operations
+- PostgreSQL data layer with Prisma ORM
+- React + TypeScript frontend
+- Containerized local deployment with Docker Compose
+- Nginx reverse proxy
+- Database backup and restore commands
+
+## Architecture
+
+```text
+Browser
+  │
+  ▼
+React + TypeScript UI
+  │
+  ▼
+Nginx
+  │
+  ▼
+Node.js / Express API
+  │
+  ▼
+Prisma ORM
+  │
+  ▼
+PostgreSQL
 ```
-├── envanter_api/          # Node.js Backend API
-│   ├── prisma/           # Veritabanı şeması
-│   ├── index.js          # Ana sunucu dosyası
-│   └── Dockerfile        # API container yapılandırması
-├── envanter_ui/          # React Frontend UI
-│   ├── src/              # Kaynak kodlar
-│   └── Dockerfile        # UI container yapılandırması
-├── docker-compose.yml     # Docker Compose yapılandırması
-├── nginx.conf            # Nginx reverse proxy
-└── Makefile              # Kolay yönetim komutları
+
+## Project Structure
+
+```text
+├── envanter_api/          # Node.js / Express backend
+│   ├── prisma/            # Database schema and migrations
+│   ├── index.js           # Application entry point
+│   └── Dockerfile
+├── envanter_ui/           # React + TypeScript frontend
+│   ├── src/
+│   └── Dockerfile
+├── docker-compose.yml
+├── nginx.conf
+└── Makefile
 ```
 
-## 🚀 Hızlı Başlangıç
+## Tech Stack
 
-### Gereksinimler
-- Docker & Docker Compose
-- Make (opsiyonel)
+### Frontend
+- React 19
+- TypeScript
+- Vite
+- React Router
 
-### 1. Projeyi Klonlayın
+### Backend
+- Node.js
+- Express
+- Prisma ORM
+- JWT authentication
+
+### Infrastructure
+- PostgreSQL
+- Docker / Docker Compose
+- Nginx
+
+## Data Model
+
+The core domain currently includes:
+
+- **User** — application users and authentication
+- **Product** — inventory items
+- **StockMovement** — stock entries, exits and movement history
+
+## API Overview
+
+### Authentication
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `POST /api/auth/logout`
+
+### Products
+- `GET /api/products`
+- `POST /api/products`
+- `GET /api/products/:id`
+- `PUT /api/products/:id`
+- `DELETE /api/products/:id`
+
+### Stock Movements
+- `GET /api/stock-movements`
+- `POST /api/stock-movements/manual`
+- `POST /api/stock-movements/upload-entry`
+
+## Running Locally
+
+### Requirements
+
+- Docker and Docker Compose
+- Make (optional)
+
+### Start the application
+
 ```bash
 git clone <repository-url>
 cd envanter-yonetim-sistemi
+make up
 ```
 
-### 2. Docker ile Başlatın
-```bash
-# Tüm servisleri başlat
-make up
+Or:
 
-# Veya Docker Compose ile
+```bash
 docker-compose up -d
 ```
 
-### 3. Veritabanı Migration'ını Çalıştırın
+Run database migrations:
+
 ```bash
 make migrate
 ```
 
-### 4. Uygulamaya Erişin
-- **Frontend UI**: http://localhost:3000
-- **Backend API**: http://localhost:3001
-- **Nginx Proxy**: http://localhost:80
-- **PostgreSQL**: localhost:5432
+### Local services
 
-## 🛠️ Geliştirme
+- Frontend: `http://localhost:3000`
+- API: `http://localhost:3001`
+- Nginx: `http://localhost:80`
+- PostgreSQL: `localhost:5432`
 
-### Sadece Veritabanını Başlat
+## Development
+
 ```bash
-make db-only
+make db-only       # Start only PostgreSQL
+make dev           # Start development environment
+make logs          # View service logs
+make status        # Check services
+make backup-db     # Back up the database
 ```
 
-### API'yi Geliştirme Modunda Çalıştır
+Backend development:
+
 ```bash
 cd envanter_api
 npm run dev
 ```
 
-### UI'yi Geliştirme Modunda Çalıştır
+Frontend development:
+
 ```bash
 cd envanter_ui
 npm run dev
 ```
 
-### Tüm Servisleri Geliştirme Modunda Başlat
-```bash
-make dev
-```
+## Configuration
 
-## 📊 Servisler
+Example API environment variables:
 
-### 🗄️ PostgreSQL (Port: 5432)
-- **Database**: envanter_db
-- **User**: postgres
-- **Password**: password
-- **Host**: localhost
-
-### 🔧 Node.js API (Port: 3001)
-- **Framework**: Express.js
-- **ORM**: Prisma
-- **Authentication**: JWT
-- **CORS**: Enabled
-
-### ⚛️ React UI (Port: 3000)
-- **Framework**: React 19
-- **Build Tool**: Vite
-- **Language**: TypeScript
-- **Router**: React Router
-
-### 🌐 Nginx Proxy (Port: 80)
-- **API Routes**: /api/*
-- **UI Routes**: /*
-- **CORS**: Configured
-
-## 🗃️ Veritabanı
-
-### Modeller
-- **User**: Kullanıcı bilgileri
-- **Product**: Ürün bilgileri
-- **StockMovement**: Stok hareketleri
-
-### Migration Komutları
-```bash
-# Yeni migration oluştur
-make migrate
-
-# Migration'ları sıfırla
-make migrate-reset
-
-# Production migration
-make migrate-deploy
-```
-
-### Prisma Komutları
-```bash
-# Prisma Client generate et
-make prisma-generate
-
-# Prisma Studio aç
-make prisma-studio
-
-# Schema'yı veritabanına push et
-make prisma-push
-```
-
-## 📝 Kullanışlı Komutlar
-
-### Servis Yönetimi
-```bash
-make up          # Tüm servisleri başlat
-make down        # Tüm servisleri durdur
-make restart     # Tüm servisleri yeniden başlat
-make status     # Servis durumlarını göster
-```
-
-### Log Görüntüleme
-```bash
-make logs        # Tüm loglar
-make logs-api    # Sadece API logları
-make logs-ui     # Sadece UI logları
-make logs-db     # Sadece DB logları
-```
-
-### Temizlik
-```bash
-make clean       # Container'ları ve volume'ları temizle
-make clean-all    # Tüm Docker verilerini temizle
-```
-
-### Shell Erişimi
-```bash
-make shell-api   # API container'ına bağlan
-make shell-db     # PostgreSQL'e bağlan
-```
-
-### Backup
-```bash
-make backup-db   # Veritabanını yedekle
-make restore-db FILE=backup.sql  # Yedekten geri yükle
-```
-
-## 🔧 Yapılandırma
-
-### Environment Variables
-
-#### API (.env)
 ```env
 DATABASE_URL=postgresql://postgres:password@db:5432/envanter_db?schema=public
 JWT_SECRET=your-secret-key-here
@@ -178,7 +168,8 @@ NODE_ENV=development
 PORT=3001
 ```
 
-#### UI (.env)
+Example UI environment variables:
+
 ```env
 VITE_API_URL=http://localhost:3001
 VITE_APP_NAME=Envanter Yönetim Sistemi
@@ -186,60 +177,6 @@ VITE_APP_VERSION=1.0.0
 VITE_NODE_ENV=development
 ```
 
-## 🐛 Sorun Giderme
+## About
 
-### Docker Sorunları
-```bash
-# Docker servislerini yeniden başlat
-docker-compose down
-docker-compose up -d
-
-# Logları kontrol et
-docker-compose logs -f
-
-# Container'ları temizle
-make clean
-```
-
-### Veritabanı Sorunları
-```bash
-# Veritabanını sıfırla
-make migrate-reset
-
-# Prisma Client'ı yeniden generate et
-make prisma-generate
-```
-
-### Port Çakışması
-Eğer portlar kullanımda ise, `docker-compose.yml` dosyasındaki port numaralarını değiştirin.
-
-## 📚 API Dokümantasyonu
-
-### Authentication Endpoints
-- `POST /api/auth/login` - Kullanıcı girişi
-- `POST /api/auth/register` - Kullanıcı kaydı
-- `POST /api/auth/logout` - Kullanıcı çıkışı
-
-### Product Endpoints
-- `GET /api/products` - Ürün listesi
-- `POST /api/products` - Yeni ürün
-- `GET /api/products/:id` - Ürün detayı
-- `PUT /api/products/:id` - Ürün güncelleme
-- `DELETE /api/products/:id` - Ürün silme
-
-### Stock Movement Endpoints
-- `GET /api/stock-movements` - Stok hareketleri
-- `POST /api/stock-movements/manual` - Manuel stok hareketi
-- `POST /api/stock-movements/upload-entry` - Toplu stok girişi
-
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Commit yapın (`git commit -m 'Add amazing feature'`)
-4. Push yapın (`git push origin feature/amazing-feature`)
-5. Pull Request oluşturun
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır.
+This project demonstrates end-to-end full-stack development across UI, API design, authentication, relational data modeling and containerized deployment.
