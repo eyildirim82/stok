@@ -118,7 +118,7 @@ const getProductById = async (req, res) => {
  */
 const createProduct = async (req, res) => {
   try {
-    const { urunKodu, kategori, alisFiyati, listeFiyati, mevcutMiktar = 0 } = req.body;
+    const { urunKodu, kategori, alisFiyati, listeFiyati, mevcutMiktar } = req.body;
 
     // Gerekli alanları kontrol et
     if (!urunKodu || !kategori || alisFiyati === undefined || listeFiyati === undefined) {
@@ -126,6 +126,15 @@ const createProduct = async (req, res) => {
         success: false,
         message: 'Ürün kodu, kategori, alış fiyatı ve liste fiyatı gerekli',
         error: 'MISSING_FIELDS'
+      });
+    }
+
+    // İlk stok miktarı hareket kaydı olmadan yazılamaz.
+    if (mevcutMiktar !== undefined && Number(mevcutMiktar) !== 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'İlk stok miktarını ürün oluşturduktan sonra stok girişi hareketi ile ekleyin',
+        error: 'STOCK_UPDATE_REQUIRES_MOVEMENT'
       });
     }
 
@@ -151,14 +160,14 @@ const createProduct = async (req, res) => {
       });
     }
 
-    // Yeni ürün oluştur
+    // Yeni ürünler sıfır stokla oluşturulur; stok değişiklikleri hareketler üzerinden yapılır.
     const newProduct = await prisma.product.create({
       data: {
         urunKodu,
         kategori,
         alisFiyati: parseFloat(alisFiyati),
         listeFiyati: parseFloat(listeFiyati),
-        mevcutMiktar: parseInt(mevcutMiktar)
+        mevcutMiktar: 0
       }
     });
 
@@ -200,6 +209,14 @@ const updateProduct = async (req, res) => {
       });
     }
 
+    if (mevcutMiktar !== undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stok miktarı ürün güncelleme endpointinden değiştirilemez; stok hareketi kullanın',
+        error: 'STOCK_UPDATE_REQUIRES_MOVEMENT'
+      });
+    }
+
     // Ürün kodu benzersizliğini kontrol et (eğer değiştiriliyorsa)
     if (urunKodu && urunKodu !== existingProduct.urunKodu) {
       const duplicateProduct = await prisma.product.findUnique({
@@ -232,13 +249,12 @@ const updateProduct = async (req, res) => {
       });
     }
 
-    // Güncelleme verilerini hazırla
+    // Güncelleme verilerini hazırla. Stok miktarı yalnız hareketler üzerinden değişir.
     const updateData = {};
     if (urunKodu !== undefined) updateData.urunKodu = urunKodu;
     if (kategori !== undefined) updateData.kategori = kategori;
     if (alisFiyati !== undefined) updateData.alisFiyati = parseFloat(alisFiyati);
     if (listeFiyati !== undefined) updateData.listeFiyati = parseFloat(listeFiyati);
-    if (mevcutMiktar !== undefined) updateData.mevcutMiktar = parseInt(mevcutMiktar);
 
     // Ürünü güncelle
     const updatedProduct = await prisma.product.update({
