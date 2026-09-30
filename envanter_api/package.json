@@ -10,8 +10,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "test": "node --test test/integration/*.test.js",
-    "test:integration": "node --test test/integration/*.test.js"
+    "test": "node --test --test-concurrency=1 test/integration/*.test.js",
+    "test:integration": "node --test --test-concurrency=1 test/integration/*.test.js"
   },
   "keywords": [],
   "author": "",
