@@ -1,7 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, Prisma } = require('@prisma/client');
 require('dotenv').config();
+
+// Keep the existing JSON contract numeric while storing money exactly in PostgreSQL.
+// Decimal.js applies toJSON before Express' JSON replacer, so define the API boundary
+// serialization directly on Prisma's Decimal implementation.
+Prisma.Decimal.prototype.toJSON = function toJSON() {
+  return this.toNumber();
+};
 
 // Prisma Client'ı başlat
 const prisma = new PrismaClient();
