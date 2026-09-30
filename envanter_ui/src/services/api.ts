@@ -129,6 +129,10 @@ export const apiService = {
 
     create: async (productData: ProductFormData) => {
       const initialStock = Number(productData.mevcutMiktar) || 0;
+      if (initialStock !== 0) {
+        throw new Error('Yeni ürünü sıfır stokla oluşturun; ilk stoğu stok girişi hareketi ile ekleyin.');
+      }
+
       const response = await api.post<ProductMutationResponse>('/api/products', {
         urunKodu: productData.urunKodu,
         kategori: productData.kategori,
@@ -136,15 +140,6 @@ export const apiService = {
         listeFiyati: productData.listeFiyati,
         mevcutMiktar: 0,
       });
-
-      if (initialStock > 0) {
-        await api.post('/api/stock-movements/manual', {
-          productId: response.data.data.product.id,
-          movementType: 'GIRIS',
-          quantity: initialStock,
-          movementDate: new Date().toISOString(),
-        });
-      }
 
       return response.data;
     },
