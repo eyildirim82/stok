@@ -1,0 +1,138 @@
+name: Product Stock Form Fix
+
+on:
+  push:
+    branches:
+      - fix/product-stock-form
+    paths:
+      - '.github/workflows/product-stock-form-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/product-stock-form
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Patch stock form contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_exact(path, old, new, expected=1):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} matches, found {count}')
+              p.write_text(text.replace(old, new))
+
+          def sub_exact(path, pattern, replacement, expected=1):
+              p = Path(path)
+              text = p.read_text()
+              new_text, count = re.subn(pattern, replacement, text, flags=re.MULTILINE | re.DOTALL)
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} regex matches, found {count}')
+              p.write_text(new_text)
+
+          # Shared UI mutation contract: stock is read-only product state, never form input.
+          replace_exact(
+              'envanter_ui/src/types/index.ts',
+              '''export interface ProductFormData {\n  urunKodu: string;\n  kategori: string;\n  alisFiyati: number;\n  listeFiyati: number;\n  mevcutMiktar: number;\n}\n''',
+              '''export interface ProductFormData {\n  urunKodu: string;\n  kategori: string;\n  alisFiyati: number;\n  listeFiyati: number;\n}\n''',
+          )
+
+          # API service sends only product metadata/prices. Backend remains the authoritative stock guard.
+          service_old = '''    create: async (productData: ProductFormData) => {\n      const initialStock = Number(productData.mevcutMiktar) || 0;\n      if (initialStock !== 0) {\n        throw new Error('Yeni ürünü sıfır stokla oluşturun; ilk stoğu stok girişi hareketi ile ekleyin.');\n      }\n\n      const response = await api.post<ProductMutationResponse>('/api/products', {\n        urunKodu: productData.urunKodu,\n        kategori: productData.kategori,\n        alisFiyati: productData.alisFiyati,\n        listeFiyati: productData.listeFiyati,\n        mevcutMiktar: 0,\n      });\n\n      return response.data;\n    },\n\n    update: async (id: number, productData: Partial<ProductFormData>) => {\n      const currentResponse = await api.get<{ success: boolean; data: { product: Product } }>(\n        `/api/products/${id}`,\n      );\n      const currentProduct = currentResponse.data.data.product;\n\n      if (\n        productData.mevcutMiktar !== undefined &&\n        Number(productData.mevcutMiktar) !== currentProduct.mevcutMiktar\n      ) {\n        throw new Error('Stok miktarını ürün düzenleme formundan değil, stok hareketi ile değiştirin.');\n      }\n\n      const { mevcutMiktar: _ignoredStock, ...safeData } = productData;\n      const response = await api.put<ProductMutationResponse>(`/api/products/${id}`, safeData);\n      return response.data;\n    },\n'''
+          service_new = '''    create: async (productData: ProductFormData) => {\n      const response = await api.post<ProductMutationResponse>('/api/products', productData);\n      return response.data;\n    },\n\n    update: async (id: number, productData: Partial<ProductFormData>) => {\n      const response = await api.put<ProductMutationResponse>(`/api/products/${id}`, productData);\n      return response.data;\n    },\n'''
+          replace_exact('envanter_ui/src/services/api.ts', service_old, service_new)
+
+          # Product page local form state no longer carries stock.
+          replace_exact(
+              'envanter_ui/src/pages/ProductPage.tsx',
+              '''interface ProductFormData {\n  urunKodu: string;\n  kategori: string;\n  alisFiyati: number;\n  listeFiyati: number;\n  mevcutMiktar: number;\n}\n''',
+              '''interface ProductFormData {\n  urunKodu: string;\n  kategori: string;\n  alisFiyati: number;\n  listeFiyati: number;\n}\n''',
+          )
+          sub_exact(
+              'envanter_ui/src/pages/ProductPage.tsx',
+              r'(?m)^\s+mevcutMiktar: 0,?\n',
+              '',
+              expected=2,
+          )
+          sub_exact(
+              'envanter_ui/src/pages/ProductPage.tsx',
+              r'(?m)^\s+mevcutMiktar: product\.mevcutMiktar,?\n',
+              '',
+              expected=1,
+          )
+
+          stock_input = '''                <div>\n                  <label className="block text-sm font-medium text-gray-700 mb-1">\n                    Mevcut Miktar\n                  </label>\n                  <input\n                    type="number"\n                    min="0"\n                    value={formData.mevcutMiktar}\n                    onChange={(e) => setFormData(prev => ({ ...prev, mevcutMiktar: parseInt(e.target.value) || 0 }))}\n                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"\n                  />\n                </div>\n'''
+          stock_context = '''                <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2">\n                  {isEditMode && editingProduct ? (\n                    <>\n                      <div className="flex items-center justify-between">\n                        <span className="text-sm font-medium text-blue-900">Mevcut Stok</span>\n                        <span className="text-sm font-semibold text-blue-900">\n                          {formatNumber(editingProduct.mevcutMiktar)}\n                        </span>\n                      </div>\n                      <p className="mt-1 text-xs text-blue-700">\n                        Stok miktarı yalnızca stok hareketleri üzerinden değiştirilebilir.\n                      </p>\n                    </>\n                  ) : (\n                    <p className="text-sm text-blue-800">\n                      Yeni ürün 0 stokla oluşturulur. İlk stok girişini ürünü oluşturduktan sonra stok hareketi üzerinden kaydedin.\n                    </p>\n                  )}\n                </div>\n'''
+          replace_exact('envanter_ui/src/pages/ProductPage.tsx', stock_input, stock_context)
+
+          # Backend route documentation matches the enforced API contract.
+          replace_exact(
+              'envanter_api/routes/products.js',
+              ' * @body    urunKodu, kategori, alisFiyati, listeFiyati, mevcutMiktar\n',
+              ' * @body    urunKodu, kategori, alisFiyati, listeFiyati\n',
+          )
+
+          # Integration helper should model the real client contract (no stock field on create).
+          replace_exact(
+              'envanter_api/test/integration/stock-movements.test.js',
+              '''      alisFiyati: 10,\n      listeFiyati: 20,\n      mevcutMiktar: 0,\n''',
+              '''      alisFiyati: 10,\n      listeFiyati: 20,\n''',
+          )
+
+          # Add explicit regression coverage: direct initial stock is rejected and creates no product.
+          marker = "test('product update cannot mutate stock quantity directly', async () => {"
+          test_text = Path('envanter_api/test/integration/stock-movements.test.js').read_text()
+          if marker not in test_text:
+              raise SystemExit('stock movement test marker not found')
+          initial_stock_test = '''test('product creation cannot initialize stock without a movement', async () => {\n  const { response, body } = await api('/api/products', {\n    method: 'POST',\n    body: JSON.stringify({\n      urunKodu: 'INT-DIRECT-INITIAL-STOCK',\n      kategori: 'Integration Test',\n      alisFiyati: 10,\n      listeFiyati: 20,\n      mevcutMiktar: 5,\n    }),\n  });\n\n  assert.equal(response.status, 400, JSON.stringify(body));\n  assert.equal(body.error, 'STOCK_UPDATE_REQUIRES_MOVEMENT');\n  assert.equal(\n    await prisma.product.count({ where: { urunKodu: 'INT-DIRECT-INITIAL-STOCK' } }),\n    0,\n  );\n});\n\n'''
+          if "product creation cannot initialize stock without a movement" in test_text:
+              raise SystemExit('initial-stock regression test already exists unexpectedly')
+          Path('envanter_api/test/integration/stock-movements.test.js').write_text(
+              test_text.replace(marker, initial_stock_test + marker, 1)
+          )
+
+          # Guard against accidentally leaving editable stock in product metadata form.
+          product_page = Path('envanter_ui/src/pages/ProductPage.tsx').read_text()
+          if 'formData.mevcutMiktar' in product_page:
+              raise SystemExit('editable stock reference remains in ProductPage form state')
+          service = Path('envanter_ui/src/services/api.ts').read_text()
+          if 'productData.mevcutMiktar' in service or 'mevcutMiktar: 0' in service:
+              raise SystemExit('stock field still exists in product mutation service payload')
+          PY
+
+      - name: Install UI dependencies
+        working-directory: envanter_ui
+        run: npm ci
+
+      - name: Typecheck UI
+        working-directory: envanter_ui
+        run: npm run typecheck
+
+      - name: Build UI
+        working-directory: envanter_ui
+        run: npm run build
+
+      - name: Commit verified source changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add envanter_ui/src/pages/ProductPage.tsx envanter_ui/src/types/index.ts envanter_ui/src/services/api.ts envanter_api/routes/products.js envanter_api/test/integration/stock-movements.test.js
+          git diff --cached --check
+          git commit -m "fix(ui): make product stock read-only [skip ci]"
+          git push origin HEAD:fix/product-stock-form
