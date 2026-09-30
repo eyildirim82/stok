@@ -184,18 +184,6 @@ export const apiService = {
   },
 };
 
-const fetchAllProducts = async (): Promise<Product[]> => {
-  const first = await apiService.products.getAll({ page: 1, limit: 100 });
-  const products = [...first.data.products];
-
-  for (let page = 2; page <= first.data.pagination.pages; page += 1) {
-    const response = await apiService.products.getAll({ page, limit: 100 });
-    products.push(...response.data.products);
-  }
-
-  return products;
-};
-
 const fetchAllMovements = async (params: Record<string, unknown> = {}): Promise<StockMovement[]> => {
   const first = await apiService.stockMovements.getAll({ ...params, page: 1, limit: 100 });
   const movements = [...first.data.movements];
@@ -209,25 +197,18 @@ const fetchAllMovements = async (params: Record<string, unknown> = {}): Promise<
 };
 
 export const getDashboardStats = async () => {
-  const [products, movementPage] = await Promise.all([
-    fetchAllProducts(),
+  const [productStats, movementPage] = await Promise.all([
+    apiService.products.getStats(),
     apiService.stockMovements.getAll({ page: 1, limit: 1 }),
   ]);
-
-  const totalStockValue = products.reduce(
-    (sum, product) => sum + product.alisFiyati * product.mevcutMiktar,
-    0,
-  );
 
   return {
     success: true,
     data: {
-      totalProducts: products.length,
-      totalStockValue,
+      totalProducts: productStats.data.totalProducts,
+      totalStockValue: productStats.data.totalStockValue,
       totalMovements: movementPage.data.pagination.total,
-      lowStockProducts: products.filter(
-        (product) => product.mevcutMiktar > 0 && product.mevcutMiktar <= 10,
-      ).length,
+      lowStockProducts: productStats.data.lowStockProducts,
     },
   };
 };
