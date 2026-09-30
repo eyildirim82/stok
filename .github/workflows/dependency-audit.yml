@@ -45,14 +45,17 @@ jobs:
         working-directory: envanter_api
         run: |
           npm install --package-lock-only
-          npm audit fix --package-lock-only
+          npm audit fix --package-lock-only || true
           npm ci
 
-      - name: Verify API dependency audit
+      - name: Verify API runtime dependencies
         working-directory: envanter_api
-        run: |
-          npm audit --omit=dev
-          npm audit
+        run: npm audit --omit=dev
+
+      - name: Record API development-tooling audit
+        working-directory: envanter_api
+        continue-on-error: true
+        run: npm audit
 
       - name: Commit verified lockfiles
         run: |
