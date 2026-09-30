@@ -9,52 +9,59 @@ on:
       - 'envanter_ui/package*.json'
       - '.github/workflows/dependency-audit.yml'
 
+permissions:
+  contents: write
+
 jobs:
-  audit:
+  refresh:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout audit branch
         uses: actions/checkout@v4
+        with:
+          ref: chore/dependency-audit
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Install UI dependencies
+      - name: Refresh UI lockfile
         working-directory: envanter_ui
-        run: npm ci
+        run: |
+          npm install --package-lock-only
+          npm audit fix --package-lock-only
+          npm ci
 
-      - name: UI runtime audit
+      - name: Verify UI dependencies
         working-directory: envanter_ui
-        continue-on-error: true
-        run: npm audit --omit=dev
+        run: |
+          npm audit --omit=dev
+          npm audit
+          npm run typecheck
+          npm run build
 
-      - name: UI safe audit-fix preview
-        working-directory: envanter_ui
-        continue-on-error: true
-        run: npm audit fix --dry-run
-
-      - name: UI outdated
-        working-directory: envanter_ui
-        continue-on-error: true
-        run: npm outdated
-
-      - name: Install API dependencies
+      - name: Refresh API lockfile
         working-directory: envanter_api
-        run: npm ci
+        run: |
+          npm install --package-lock-only
+          npm audit fix --package-lock-only
+          npm ci
 
-      - name: API runtime audit
+      - name: Verify API dependency audit
         working-directory: envanter_api
-        continue-on-error: true
-        run: npm audit --omit=dev
+        run: |
+          npm audit --omit=dev
+          npm audit
 
-      - name: API safe audit-fix preview
-        working-directory: envanter_api
-        continue-on-error: true
-        run: npm audit fix --dry-run
-
-      - name: API outdated
-        working-directory: envanter_api
-        continue-on-error: true
-        run: npm outdated
+      - name: Commit verified lockfiles
+        run: |
+          if git diff --quiet -- envanter_ui/package.json envanter_ui/package-lock.json envanter_api/package.json envanter_api/package-lock.json; then
+            echo "No dependency lockfile changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add envanter_ui/package.json envanter_ui/package-lock.json envanter_api/package.json envanter_api/package-lock.json
+          git commit -m "chore(deps): refresh audited lockfiles [skip ci]"
+          git push origin HEAD:chore/dependency-audit
