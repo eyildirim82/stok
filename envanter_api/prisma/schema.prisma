@@ -29,6 +29,15 @@ model Product {
   stockMovements StockMovement[]
 }
 
+model StockImport {
+  id             Int             @id @default(autoincrement())
+  sha256         String          @unique @db.VarChar(64)
+  fileName       String
+  rowCount       Int
+  createdAt      DateTime        @default(now())
+  stockMovements StockMovement[]
+}
+
 model StockMovement {
   id            Int          @id @default(autoincrement())
   product       Product      @relation(fields: [productId], references: [id])
@@ -38,4 +47,9 @@ model StockMovement {
   faturaNo      String?
   movementDate  DateTime
   createdAt     DateTime     @default(now())
+  import        StockImport? @relation(fields: [importId], references: [id], onDelete: SetNull)
+  importId      Int?
+  importRow     Int?
+
+  @@unique([importId, importRow])
 }
