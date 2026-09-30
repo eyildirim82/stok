@@ -23,7 +23,6 @@ interface ProductFormData {
   kategori: string;
   alisFiyati: number;
   listeFiyati: number;
-  mevcutMiktar: number;
 }
 
 const ProductPage: React.FC = () => {
@@ -65,7 +64,6 @@ const ProductPage: React.FC = () => {
     kategori: '',
     alisFiyati: 0,
     listeFiyati: 0,
-    mevcutMiktar: 0
   });
 
   // Ürünleri yükle
@@ -100,7 +98,6 @@ const ProductPage: React.FC = () => {
       kategori: '',
       alisFiyati: 0,
       listeFiyati: 0,
-      mevcutMiktar: 0
     });
     setIsEditMode(false);
     setEditingProduct(null);
@@ -115,7 +112,6 @@ const ProductPage: React.FC = () => {
         kategori: product.kategori,
         alisFiyati: product.alisFiyati,
         listeFiyati: product.listeFiyati,
-        mevcutMiktar: product.mevcutMiktar
       });
       setIsEditMode(true);
     } else {
@@ -559,17 +555,24 @@ const ProductPage: React.FC = () => {
                   </div>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mevcut Miktar
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.mevcutMiktar}
-                    onChange={(e) => setFormData(prev => ({ ...prev, mevcutMiktar: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
+                  {isEditMode && editingProduct ? (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-blue-900">Mevcut Stok</span>
+                        <span className="text-sm font-semibold text-blue-900">
+                          {formatNumber(editingProduct.mevcutMiktar)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-blue-700">
+                        Stok miktarı yalnızca stok hareketleri üzerinden değiştirilebilir.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-blue-800">
+                      Yeni ürün 0 stokla oluşturulur. İlk stok girişini ürünü oluşturduktan sonra stok hareketi üzerinden kaydedin.
+                    </p>
+                  )}
                 </div>
                 
                 <div className="flex justify-end space-x-3 pt-4">

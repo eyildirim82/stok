@@ -128,37 +128,12 @@ export const apiService = {
     },
 
     create: async (productData: ProductFormData) => {
-      const initialStock = Number(productData.mevcutMiktar) || 0;
-      if (initialStock !== 0) {
-        throw new Error('Yeni ürünü sıfır stokla oluşturun; ilk stoğu stok girişi hareketi ile ekleyin.');
-      }
-
-      const response = await api.post<ProductMutationResponse>('/api/products', {
-        urunKodu: productData.urunKodu,
-        kategori: productData.kategori,
-        alisFiyati: productData.alisFiyati,
-        listeFiyati: productData.listeFiyati,
-        mevcutMiktar: 0,
-      });
-
+      const response = await api.post<ProductMutationResponse>('/api/products', productData);
       return response.data;
     },
 
     update: async (id: number, productData: Partial<ProductFormData>) => {
-      const currentResponse = await api.get<{ success: boolean; data: { product: Product } }>(
-        `/api/products/${id}`,
-      );
-      const currentProduct = currentResponse.data.data.product;
-
-      if (
-        productData.mevcutMiktar !== undefined &&
-        Number(productData.mevcutMiktar) !== currentProduct.mevcutMiktar
-      ) {
-        throw new Error('Stok miktarını ürün düzenleme formundan değil, stok hareketi ile değiştirin.');
-      }
-
-      const { mevcutMiktar: _ignoredStock, ...safeData } = productData;
-      const response = await api.put<ProductMutationResponse>(`/api/products/${id}`, safeData);
+      const response = await api.put<ProductMutationResponse>(`/api/products/${id}`, productData);
       return response.data;
     },
 
