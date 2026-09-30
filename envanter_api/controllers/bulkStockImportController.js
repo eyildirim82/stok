@@ -152,7 +152,11 @@ exports.importStockMovements = async (req, res) => {
         success: false,
         message: error.message || 'Dosya okunamadı',
         error: error.code || 'INVALID_IMPORT_FILE',
-        data: error.details,
+        data: {
+          processed: 0,
+          errorCount: Array.isArray(error.details?.errors) ? error.details.errors.length : 0,
+          ...(error.details || {}),
+        },
       });
     }
 
@@ -170,7 +174,11 @@ exports.importStockMovements = async (req, res) => {
         success: false,
         message: 'Dosyada doğrulama hataları var; hiçbir stok hareketi uygulanmadı',
         error: 'IMPORT_VALIDATION_FAILED',
-        data: { errors: validation.errors },
+        data: {
+          processed: 0,
+          errorCount: validation.errors.length,
+          errors: validation.errors,
+        },
       });
     }
 
@@ -261,6 +269,7 @@ exports.importStockMovements = async (req, res) => {
       data: {
         importId: result.id,
         processed: result.rowCount,
+        errorCount: 0,
         ignoredColumns: parsed.unknownHeaders,
       },
     });
@@ -270,7 +279,11 @@ exports.importStockMovements = async (req, res) => {
         success: false,
         message: error.message,
         error: error.errorCode,
-        data: error.details,
+        data: {
+          processed: 0,
+          errorCount: Array.isArray(error.details?.errors) ? error.details.errors.length : 0,
+          ...(error.details || {}),
+        },
       });
     }
 

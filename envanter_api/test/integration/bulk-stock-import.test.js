@@ -130,6 +130,7 @@ test('CSV import applies all movements atomically and records one batch', async 
   const { response, body } = await uploadFile(csv, 'stock.csv', 'text/csv');
   assert.equal(response.status, 201, JSON.stringify(body));
   assert.equal(body.data.processed, 2);
+  assert.equal(body.data.errorCount, 0);
 
   const [firstStored, secondStored, movementCount, importCount] = await Promise.all([
     prisma.product.findUnique({ where: { id: first.id } }),
@@ -172,6 +173,8 @@ test('insufficient stock rolls back every earlier row in the file', async () => 
   const { response, body } = await uploadFile(csv, 'rollback.csv', 'text/csv');
   assert.equal(response.status, 409, JSON.stringify(body));
   assert.equal(body.error, 'IMPORT_INSUFFICIENT_STOCK');
+  assert.equal(body.data.processed, 0);
+  assert.equal(body.data.errorCount, 1);
   assert.equal(body.data.errors[0].row, 3);
 
   const [inboundStored, outboundStored] = await Promise.all([
@@ -195,6 +198,8 @@ test('validation errors reject the whole file before a transaction starts', asyn
   const { response, body } = await uploadFile(csv, 'invalid.csv', 'text/csv');
   assert.equal(response.status, 422, JSON.stringify(body));
   assert.equal(body.error, 'IMPORT_VALIDATION_FAILED');
+  assert.equal(body.data.processed, 0);
+  assert.equal(body.data.errorCount, 1);
   assert.equal(body.data.errors[0].code, 'PRODUCT_NOT_FOUND');
 
   const stored = await prisma.product.findUnique({ where: { urunKodu: 'BULK-VALID' } });
