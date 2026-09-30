@@ -1,0 +1,50 @@
+name: Dependency Audit Investigation
+
+on:
+  push:
+    branches:
+      - chore/dependency-audit
+    paths:
+      - 'envanter_api/package*.json'
+      - 'envanter_ui/package*.json'
+      - '.github/workflows/dependency-audit.yml'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install UI dependencies
+        working-directory: envanter_ui
+        run: npm ci
+
+      - name: UI runtime audit
+        working-directory: envanter_ui
+        continue-on-error: true
+        run: npm audit --omit=dev
+
+      - name: UI full audit
+        working-directory: envanter_ui
+        continue-on-error: true
+        run: npm audit
+
+      - name: Install API dependencies
+        working-directory: envanter_api
+        run: npm ci
+
+      - name: API runtime audit
+        working-directory: envanter_api
+        continue-on-error: true
+        run: npm audit --omit=dev
+
+      - name: API full audit
+        working-directory: envanter_api
+        continue-on-error: true
+        run: npm audit
