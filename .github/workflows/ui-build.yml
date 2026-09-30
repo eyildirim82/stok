@@ -1,0 +1,40 @@
+name: UI Build
+
+on:
+  pull_request:
+    paths:
+      - 'envanter_ui/**'
+      - '.github/workflows/ui-build.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'envanter_ui/**'
+      - '.github/workflows/ui-build.yml'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: envanter_ui
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: envanter_ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
