@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
@@ -11,19 +14,19 @@
   },
   "dependencies": {
     "axios": "^1.20.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-dropzone": "^14.3.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-dropzone": "^14.4.1",
     "react-router-dom": "^7.18.4",
-    "recharts": "^3.2.1"
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.14",
-    "@types/node": "^22.14.0",
-    "@vitejs/plugin-react": "^5.0.0",
-    "autoprefixer": "^10.4.21",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.20.4",
+    "@vitejs/plugin-react": "^5.2.0",
+    "autoprefixer": "^10.6.1",
     "postcss": "^8.5.28",
-    "tailwindcss": "^4.1.14",
+    "tailwindcss": "^4.3.3",
     "typescript": "~5.8.2",
     "vite": "^6.4.3"
   }
