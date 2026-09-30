@@ -194,7 +194,7 @@ export const apiService = {
       return response.data;
     },
 
-    uploadEntry: async (_fileData: FormData) => {
+    uploadEntry: async (_fileData: FormData): Promise<{ data?: { processed?: number } }> => {
       throw new Error('Toplu stok yükleme backend tarafından henüz desteklenmiyor.');
     },
   },
