@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useEffect, useState, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService, tokenManager, userManager } from '../services/api';
 import { User } from '../types';
@@ -6,7 +6,7 @@ import { User } from '../types';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -19,50 +19,68 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for token on initial load
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      // In a real app, you'd validate the token with the server
-      // For this mock, we'll just assume it's valid and set a mock user
-      setUser({ id: 'user-1', email: 'admin@example.com', name: 'Admin User' });
-    }
-    setLoading(false);
+    let cancelled = false;
+
+    const restoreSession = async () => {
+      const token = tokenManager.getToken();
+      if (!token) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await apiService.auth.getMe();
+        if (cancelled) return;
+
+        userManager.setUser(response.data.user);
+        setUser(response.data.user);
+      } catch {
+        tokenManager.removeToken();
+        userManager.removeUser();
+        if (!cancelled) setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void restoreSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-  
-  const login = async (email: string, password: string) => {
-    // Backend, kullanıcı adı alanı bekliyor; e-postayı username olarak geçiriyoruz
-    const response = await apiService.auth.login({ username: email, password });
 
-    if (response?.success && response?.data?.token && response?.data?.user) {
-      tokenManager.setToken(response.data.token);
-      userManager.setUser(response.data.user);
-      setUser(response.data.user);
-      navigate('/dashboard');
-      return;
+  const login = async (username: string, password: string) => {
+    const response = await apiService.auth.login({ username, password });
+
+    if (!response.success || !response.data?.token || !response.data?.user) {
+      throw new Error('Giriş başarısız.');
     }
 
-    throw new Error('Giriş başarısız.');
+    tokenManager.setToken(response.data.token);
+    userManager.setUser(response.data.user);
+    setUser(response.data.user);
+    navigate('/dashboard');
   };
 
   const logout = () => {
-    // Sunucu tarafı oturum kapatma çağrısı (isteğe bağlı)
-    try { void apiService.auth.logout(); } catch {}
+    void apiService.auth.logout().catch(() => undefined);
     tokenManager.removeToken();
     userManager.removeUser();
     setUser(null);
     navigate('/login');
   };
 
-  const value = {
-    isAuthenticated: !!user,
-    user,
-    login,
-    logout,
-    loading,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        isAuthenticated: Boolean(user),
+        user,
+        login,
+        logout,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
