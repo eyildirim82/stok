@@ -8,7 +8,7 @@
   <a href="https://github.com/eyildirim82/stok/actions/workflows/backend-integration.yml"><img src="https://github.com/eyildirim82/stok/actions/workflows/backend-integration.yml/badge.svg" alt="Backend Integration" /></a>
   <a href="https://github.com/eyildirim82/stok/actions/workflows/ui-build.yml"><img src="https://github.com/eyildirim82/stok/actions/workflows/ui-build.yml/badge.svg" alt="UI Build" /></a>
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
-  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL 16" />
+  <img src="https://img.shields.io/badge/PostgreSQL-database-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL" />
 </p>
 
 A full-stack inventory management system for maintaining a product catalog, recording stock entries and exits, reviewing movement history and operating day-to-day inventory workflows through a web interface and REST API.
@@ -132,7 +132,7 @@ StockMovement
 
 **Infrastructure**
 
-- PostgreSQL 16
+- PostgreSQL (15 in local Docker Compose, 16 in CI integration tests)
 - Docker / Docker Compose
 - Nginx
 - GitHub Actions
