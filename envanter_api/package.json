@@ -1,7 +1,7 @@
 {
   "name": "envanter_api",
   "version": "1.0.0",
-  "description": "",
+  "description": "Inventory management REST API",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
