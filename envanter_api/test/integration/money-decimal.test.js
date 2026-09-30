@@ -185,3 +185,46 @@ test('two-decimal storage is preserved after product update', async () => {
   assert.equal(rows[0].alisFiyati, '20.10');
   assert.equal(rows[0].listeFiyati, '30.50');
 });
+
+test('inventory value aggregate uses exact decimal multiplication in PostgreSQL', async () => {
+  const create = async (code, purchasePrice) => {
+    const created = await api('/api/products', {
+      method: 'POST',
+      body: JSON.stringify({
+        urunKodu: code,
+        kategori: 'Decimal Aggregate',
+        alisFiyati: purchasePrice,
+        listeFiyati: purchasePrice,
+      }),
+    });
+    assert.equal(created.response.status, 201, JSON.stringify(created.body));
+    return created.body.data.product;
+  };
+
+  const first = await create('INT-DECIMAL-AGG-A', 0.10);
+  const second = await create('INT-DECIMAL-AGG-B', 0.20);
+
+  for (const [productId, quantity] of [[first.id, 3], [second.id, 7]]) {
+    const movement = await api('/api/stock-movements/manual', {
+      method: 'POST',
+      body: JSON.stringify({
+        productId,
+        movementType: 'GIRIS',
+        quantity,
+      }),
+    });
+    assert.equal(movement.response.status, 201, JSON.stringify(movement.body));
+  }
+
+  const stats = await api('/api/products/stats');
+  assert.equal(stats.response.status, 200, JSON.stringify(stats.body));
+  assert.equal(stats.body.data.totalStockQuantity, 10);
+  assert.equal(stats.body.data.totalStockValue, 1.7);
+  assert.equal(stats.body.data.lowStockProducts, 2);
+
+  const [exact] = await prisma.$queryRaw`
+    SELECT COALESCE(SUM("alisFiyati" * "mevcutMiktar"), 0)::numeric(20,2)::text AS "totalStockValue"
+    FROM "Product"
+  `;
+  assert.equal(exact.totalStockValue, '1.70');
+});

@@ -366,18 +366,16 @@ const getCategories = async (req, res) => {
  */
 const getProductStats = async (req, res) => {
   try {
-    const totalProducts = await prisma.product.count();
-    const totalValue = await prisma.product.aggregate({
-      _sum: {
-        mevcutMiktar: true
-      }
-    });
-
-    const totalStockValue = await prisma.product.aggregate({
-      _sum: {
-        alisFiyati: true
-      }
-    });
+    // Inventory value is calculated in PostgreSQL so Decimal prices are multiplied
+    // and summed as exact fixed-point values before crossing the JSON boundary.
+    const [summary] = await prisma.$queryRaw`
+      SELECT
+        COUNT(*) AS "totalProducts",
+        COALESCE(SUM("mevcutMiktar"), 0)::bigint AS "totalStockQuantity",
+        COALESCE(SUM("alisFiyati" * "mevcutMiktar"), 0)::numeric(20,2) AS "totalStockValue",
+        COUNT(*) FILTER (WHERE "mevcutMiktar" > 0 AND "mevcutMiktar" <= 10) AS "lowStockProducts"
+      FROM "Product"
+    `;
 
     const categoryStats = await prisma.product.groupBy({
       by: ['kategori'],
@@ -392,9 +390,10 @@ const getProductStats = async (req, res) => {
     res.json({
       success: true,
       data: {
-        totalProducts,
-        totalStockQuantity: totalValue._sum.mevcutMiktar || 0,
-        totalStockValue: totalStockValue._sum.alisFiyati || 0,
+        totalProducts: Number(summary.totalProducts),
+        totalStockQuantity: Number(summary.totalStockQuantity),
+        totalStockValue: summary.totalStockValue,
+        lowStockProducts: Number(summary.lowStockProducts),
         categoryStats
       }
     });
