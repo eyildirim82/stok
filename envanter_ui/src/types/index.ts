@@ -32,7 +32,6 @@ export interface ProductFormData {
   kategori: string;
   alisFiyati: number;
   listeFiyati: number;
-  mevcutMiktar: number;
 }
 
 export interface StockMovementFormData {

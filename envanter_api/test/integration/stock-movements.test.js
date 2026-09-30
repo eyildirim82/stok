@@ -63,7 +63,6 @@ const createProduct = async (code) => {
       kategori: 'Integration Test',
       alisFiyati: 10,
       listeFiyati: 20,
-      mevcutMiktar: 0,
     }),
   });
 
@@ -195,6 +194,25 @@ test('concurrent CIKIS requests cannot overspend available stock', async () => {
   });
   assert.equal(stored.mevcutMiktar, 1);
   assert.equal(exitCount, 1);
+});
+
+test('product creation cannot initialize stock without a movement', async () => {
+  const { response, body } = await api('/api/products', {
+    method: 'POST',
+    body: JSON.stringify({
+      urunKodu: 'INT-DIRECT-INITIAL-STOCK',
+      kategori: 'Integration Test',
+      alisFiyati: 10,
+      listeFiyati: 20,
+      mevcutMiktar: 5,
+    }),
+  });
+
+  assert.equal(response.status, 400, JSON.stringify(body));
+  assert.equal(body.error, 'STOCK_UPDATE_REQUIRES_MOVEMENT');
+  assert.equal(await prisma.product.count({
+    where: { urunKodu: 'INT-DIRECT-INITIAL-STOCK' },
+  }), 0);
 });
 
 test('product update cannot mutate stock quantity directly', async () => {

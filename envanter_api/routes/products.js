@@ -53,7 +53,7 @@ router.post('/', authenticateToken, createProduct);
  * @route   PUT /api/products/:id
  * @desc    Ürün güncelle
  * @access  Private
- * @body    urunKodu, kategori, alisFiyati, listeFiyati, mevcutMiktar
+ * @body    urunKodu, kategori, alisFiyati, listeFiyati
  */
 router.put('/:id', authenticateToken, updateProduct);
 
