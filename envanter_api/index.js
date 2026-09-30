@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, Prisma } = require('@prisma/client');
 require('dotenv').config();
 
 // Prisma Client'ı başlat
@@ -8,6 +8,11 @@ const prisma = new PrismaClient();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Keep the existing JSON contract numeric while storing money exactly in PostgreSQL.
+app.set('json replacer', (_key, value) => (
+  Prisma.Decimal.isDecimal(value) ? value.toNumber() : value
+));
 
 // Middleware
 app.use(cors());
