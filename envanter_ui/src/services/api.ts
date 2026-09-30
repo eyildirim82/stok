@@ -13,9 +13,6 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 api.interceptors.request.use((config) => {
@@ -164,8 +161,13 @@ export const apiService = {
       return response.data;
     },
 
-    uploadEntry: async (_fileData: FormData): Promise<{ data?: { processed?: number } }> => {
-      throw new Error('Toplu stok yükleme backend tarafından henüz desteklenmiyor.');
+    uploadEntry: async (fileData: FormData): Promise<{
+      success: boolean;
+      message: string;
+      data?: { importId?: number; processed?: number; ignoredColumns?: string[] };
+    }> => {
+      const response = await api.post('/api/stock-movements/upload-entry', fileData);
+      return response.data;
     },
   },
 
