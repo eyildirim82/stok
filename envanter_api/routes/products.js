@@ -45,7 +45,7 @@ router.get('/:id', authenticateToken, getProductById);
  * @route   POST /api/products
  * @desc    Yeni ürün oluştur
  * @access  Private
- * @body    urunKodu, kategori, alisFiyati, listeFiyati, mevcutMiktar
+ * @body    urunKodu, kategori, alisFiyati, listeFiyati
  */
 router.post('/', authenticateToken, createProduct);
 
