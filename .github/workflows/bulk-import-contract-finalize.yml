@@ -27,46 +27,47 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          def replace_once(path, old, new):
+          def replace_exact(path, old, new, expected=1):
               p = Path(path)
               text = p.read_text()
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected one match, found {count}')
-              p.write_text(text.replace(old, new, 1))
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} matches, found {count}')
+              p.write_text(text.replace(old, new))
 
           controller = 'envanter_api/controllers/bulkStockImportController.js'
 
-          replace_once(
+          replace_exact(
               controller,
               "        data: { errors: validation.errors },\n",
               "        data: {\n          processed: 0,\n          errorCount: validation.errors.length,\n          errors: validation.errors,\n        },\n",
           )
 
-          replace_once(
+          replace_exact(
               controller,
               "        processed: result.rowCount,\n        ignoredColumns: parsed.unknownHeaders,\n",
               "        processed: result.rowCount,\n        errorCount: 0,\n        ignoredColumns: parsed.unknownHeaders,\n",
           )
 
-          replace_once(
+          replace_exact(
               controller,
               "        data: error.details,\n      });\n",
               "        data: {\n          processed: 0,\n          errorCount: Array.isArray(error.details?.errors) ? error.details.errors.length : 0,\n          ...(error.details || {}),\n        },\n      });\n",
+              expected=2,
           )
 
           test_file = 'envanter_api/test/integration/bulk-stock-import.test.js'
-          replace_once(
+          replace_exact(
               test_file,
               "  assert.equal(body.data.processed, 2);\n",
               "  assert.equal(body.data.processed, 2);\n  assert.equal(body.data.errorCount, 0);\n",
           )
-          replace_once(
+          replace_exact(
               test_file,
               "  assert.equal(body.error, 'IMPORT_INSUFFICIENT_STOCK');\n  assert.equal(body.data.errors[0].row, 3);\n",
               "  assert.equal(body.error, 'IMPORT_INSUFFICIENT_STOCK');\n  assert.equal(body.data.processed, 0);\n  assert.equal(body.data.errorCount, 1);\n  assert.equal(body.data.errors[0].row, 3);\n",
           )
-          replace_once(
+          replace_exact(
               test_file,
               "  assert.equal(body.error, 'IMPORT_VALIDATION_FAILED');\n  assert.equal(body.data.errors[0].code, 'PRODUCT_NOT_FOUND');\n",
               "  assert.equal(body.error, 'IMPORT_VALIDATION_FAILED');\n  assert.equal(body.data.processed, 0);\n  assert.equal(body.data.errorCount, 1);\n  assert.equal(body.data.errors[0].code, 'PRODUCT_NOT_FOUND');\n",
