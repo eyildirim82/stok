@@ -48,14 +48,23 @@ jobs:
           npm audit fix --package-lock-only || true
           npm ci
 
-      - name: Verify API runtime dependencies
-        working-directory: envanter_api
-        run: npm audit --omit=dev
-
-      - name: Record API development-tooling audit
+      - name: Record API lockfile audit
         working-directory: envanter_api
         continue-on-error: true
         run: npm audit
+
+      - name: Verify API production install excludes vulnerable Prisma tooling
+        working-directory: envanter_api
+        run: |
+          rm -rf node_modules
+          npm ci --omit=dev
+          if npm ls --omit=dev --all deepmerge-ts >/tmp/deepmerge-prod-tree.txt 2>&1; then
+            cat /tmp/deepmerge-prod-tree.txt
+            echo "deepmerge-ts unexpectedly exists in the production install"
+            exit 1
+          fi
+          cat /tmp/deepmerge-prod-tree.txt || true
+          echo "Verified: deepmerge-ts is absent from npm ci --omit=dev production install."
 
       - name: Commit verified lockfiles
         run: |
