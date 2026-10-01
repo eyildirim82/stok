@@ -3,6 +3,7 @@ import { chromium } from 'playwright';
 
 const API_URL = 'http://127.0.0.1:3001';
 const UI_URL = 'http://127.0.0.1:3000';
+const SCREENSHOT_DIR = '../docs/screenshots';
 const username = 'portfolio-demo';
 const password = 'portfolio-demo-2026';
 
@@ -88,7 +89,7 @@ async function seedDemoData() {
 
 async function capture() {
   await seedDemoData();
-  await mkdir('docs/screenshots', { recursive: true });
+  await mkdir(SCREENSHOT_DIR, { recursive: true });
 
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
@@ -104,16 +105,16 @@ async function capture() {
   await page.waitForURL(/#\/dashboard$/);
   await page.getByText('Son 7 Gün Stok Hareketleri').waitFor();
   await page.locator('[aria-label="Son 7 gün stok hareketleri grafiği"] svg').waitFor();
-  await page.screenshot({ path: 'docs/screenshots/dashboard.png', fullPage: true });
+  await page.screenshot({ path: `${SCREENSHOT_DIR}/dashboard.png`, fullPage: true });
 
   await page.goto(`${UI_URL}/#/products`, { waitUntil: 'networkidle' });
   await page.getByText('Ürün Yönetimi').waitFor();
   await page.getByText('SNS-IND-001', { exact: true }).first().waitFor();
-  await page.screenshot({ path: 'docs/screenshots/products.png', fullPage: true });
+  await page.screenshot({ path: `${SCREENSHOT_DIR}/products.png`, fullPage: true });
 
   await page.goto(`${UI_URL}/#/history`, { waitUntil: 'networkidle' });
   await page.getByText('SNS-IND-001', { exact: true }).first().waitFor();
-  await page.screenshot({ path: 'docs/screenshots/history.png', fullPage: true });
+  await page.screenshot({ path: `${SCREENSHOT_DIR}/history.png`, fullPage: true });
 
   await browser.close();
 }
