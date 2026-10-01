@@ -104,7 +104,7 @@ async function capture() {
   await page.getByRole('button', { name: 'Giriş Yap' }).click();
   await page.waitForURL(/#\/dashboard$/);
   await page.getByText('Son 7 Gün Stok Hareketleri').waitFor();
-  await page.locator('[aria-label="Son 7 gün stok hareketleri grafiği"] svg').waitFor();
+  await page.locator('[aria-label="Son 7 gün stok hareketleri grafiği"] svg[role="application"]').waitFor();
   await page.screenshot({ path: `${SCREENSHOT_DIR}/dashboard.png`, fullPage: true });
 
   await page.goto(`${UI_URL}/#/products`, { waitUntil: 'networkidle' });
