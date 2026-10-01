@@ -6,6 +6,7 @@ on:
       - portfolio/16-dashboard-screenshots
     paths:
       - '.github/workflows/portfolio-screenshots.yml'
+      - 'envanter_ui/tools/portfolio-screenshots.mjs'
 
 permissions:
   contents: write
