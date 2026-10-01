@@ -15,6 +15,22 @@ A full-stack inventory application for maintaining a product catalog, recording 
 
 The project focuses on engineering concerns that appear beyond basic CRUD: **transaction-safe stock updates, concurrent stock-out protection, decimal money storage, all-or-nothing bulk imports, duplicate-import protection, authentication, database migrations, integration testing and reproducible containerized deployment**.
 
+## Product screenshots
+
+The screenshots below are captured from the real React/Express/Prisma/PostgreSQL application at a deterministic 1600×1000 viewport. The disposable PostgreSQL database is populated with synthetic products and stock movements only; no production credentials, customer records or private inventory data are included.
+
+### Dashboard
+
+![Inventory dashboard with stock summary cards and seven-day movement chart](docs/screenshots/dashboard.png)
+
+### Product management
+
+![Inventory product management screen](docs/screenshots/products.png)
+
+### Movement history
+
+![Inventory stock movement history screen](docs/screenshots/history.png)
+
 ## Engineering highlights
 
 | Area | What the project demonstrates |
